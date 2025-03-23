@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF AI Assistant</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF AI Assistant</h1>
+            <p>Upload multiple PDFs and ask questions about their content</p>
+        </header>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="dropZone">
+                <i class="fas fa-file-pdf"></i>
+                <h3>Drag & Drop your PDFs here</h3>
+                <p>or</p>
+                <label for="fileInput" class="upload-btn">Choose Files</label>
+                <input type="file" id="fileInput" accept="application/pdf" multiple hidden>
+                <p class="file-info" id="fileInfo">Max file size: 10MB per PDF</p>
+            </div>
+        </div>
+        
+        <div class="documents-list" id="documentsList">
+            <h2>Uploaded Documents</h2>
+            <div class="documents-container" id="documentsContainer">
+                <p class="no-documents">No documents uploaded yet</p>
+            </div>
+        </div>
+        
+        <div class="chat-section" id="chatSection">
+            <div class="document-info">
+                <div id="pdfPreview">
+                    <span>PDF preview will appear here</span>
+                </div>
+                <div class="pdf-info">
+                    <h3 id="fileName">No file selected</h3>
+                    <p id="filePages">0 pages</p>
+                </div>
+                <div class="active-document-info">
+                    <p>Currently viewing: <span id="activeDocumentName">None</span></p>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        <div class="message-content">
+                            <p>Hello! I'm your PDF assistant. Upload PDFs and ask me anything about them.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" id="questionInput" placeholder="Ask a question about your PDFs..." disabled>
+                    <button id="sendBtn" disabled><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
