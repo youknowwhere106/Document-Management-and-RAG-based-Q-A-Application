@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+
+    
     function handleFileSelect(e) {
         if (e.target.files.length) {
             handleFiles(e.target.files);
@@ -59,6 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function handleFiles(files) {
+        // Get API key (assuming there's an input for it)
+
+        
         let validFiles = 0;
         let filesToUpload = [];
         
@@ -90,25 +95,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add system message about uploading
             addMessage('system', `Uploading ${validFiles} document(s). Please wait...`);
             
-            // IMPORTANT FIX: Add files to local array BEFORE trying to upload to backend
-            // This ensures files are visible in the UI even if backend upload fails
-            uploadedFiles = [...uploadedFiles, ...filesToUpload];
-            updateDocumentsList();
-            
-            // If this is the first file, make it active
-            if (uploadedFiles.length === validFiles) {
-                setActiveFile(0);
-            }
-            
-            // Enable chat if not already enabled
-            if (questionInput.disabled) {
-                questionInput.disabled = false;
-                sendBtn.disabled = false;
-            }
-            
-            // Try to upload files to the backend
+            // Upload files to the backend
             uploadFiles(filesToUpload)
                 .then(response => {
+                    // Add files to local array
+                    uploadedFiles = [...uploadedFiles, ...filesToUpload];
+                    updateDocumentsList();
+                    
+                    // If this is the first file, make it active
+                    if (uploadedFiles.length === validFiles) {
+                        setActiveFile(0);
+                    }
+                    
                     // Start polling for processing status
                     startProcessingStatusPolling();
                     
@@ -116,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error uploading files:', error);
-                    addMessage('system', `Error uploading files to server: ${error.message || 'Unknown error'}. You can still view the documents locally.`);
+                    addMessage('system', `Error uploading files: ${error.message || 'Unknown error'}`);
                 });
         }
     }
@@ -124,6 +122,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function uploadFiles(files) {
         // Create FormData object to send files
         const formData = new FormData();
+        
+        // Add API key
+
         
         // Add files
         files.forEach(file => {
@@ -161,6 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Stop polling
                         clearInterval(pollInterval);
                         
+                        // Enable chat if not already enabled
+                        questionInput.disabled = false;
+                        sendBtn.disabled = false;
+                        
                         // Add message
                         addMessage('system', 'Processing complete! You can now ask questions about the documents.');
                     } else if (processingStatus === 'failed') {
@@ -173,21 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error checking processing status:', error);
-                    // Stop polling after several failed attempts
-                    clearInterval(pollInterval);
-                    processingStatus = 'completed'; // Set to completed to allow questions
-                    addMessage('system', 'Could not connect to server for processing. You can view documents but AI features may be limited.');
                 });
         }, 3000); // Check every 3 seconds
-        
-        // Safety timeout - stop polling after 2 minutes regardless
-        setTimeout(() => {
-            clearInterval(pollInterval);
-            if (processingStatus === 'processing') {
-                processingStatus = 'completed';
-                addMessage('system', 'Processing timed out but you can still ask questions.');
-            }
-        }, 120000);
     }
     
     function updateDocumentsList() {
@@ -319,6 +311,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!question) return;
         
+        // Check if processing is completed
+        if (processingStatus !== 'completed') {
+            addMessage('system', 'Please wait for document processing to complete before asking questions.');
+            return;
+        }
+        
+        // Get API key
+
+        
+
+        
         // Add user message
         addMessage('user', question);
         
@@ -340,42 +343,26 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create form data
             const formData = new FormData();
             formData.append('question', question);
+
             
-            // Try to send question to backend
-            let aiResponse;
-            try {
-                const response = await fetch(`${API_BASE_URL}/ask-question/`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Error getting answer');
-                }
-                
-                const data = await response.json();
-                aiResponse = data.answer;
-            } catch (error) {
-                console.error('Error asking question to backend:', error);
-                
-                // Fallback to local responses if backend fails
-                const responses = [
-                    `Based on the content in "${uploadedFiles[activeFileIndex].name}", the answer to your question is that the document discusses the importance of sustainable development in urban planning. It highlights several case studies from European cities that have successfully implemented green infrastructure.`,
-                    `Looking at all your uploaded documents, I found relevant information in "${uploadedFiles[activeFileIndex].name}" and "${uploadedFiles.length > 1 ? uploadedFiles[(activeFileIndex + 1) % uploadedFiles.length].name : uploadedFiles[activeFileIndex].name}". According to the research findings, approximately 68% of participants reported an increase in productivity after implementing the new methodology.`,
-                    `According to page 3 of "${uploadedFiles[activeFileIndex].name}", the financial projections for Q3 show a 12% increase in revenue compared to the same period last year. The report attributes this growth to the expansion into Asian markets and the launch of the new product line.`,
-                    `I found several references to your question across multiple documents. The main point appears on page 7 of "${uploadedFiles[activeFileIndex].name}", where the author argues that artificial intelligence will transform healthcare through improved diagnostics, personalized treatment plans, and more efficient administrative processes.`,
-                    `None of your documents contain specific information about that topic, but "${uploadedFiles[activeFileIndex].name}" does mention related concepts on pages 12-15. The author discusses how climate change impacts agricultural practices and suggests several adaptation strategies for farmers in drought-prone regions.`
-                ];
-                
-                aiResponse = responses[Math.floor(Math.random() * responses.length)];
-            }
+            // Send question to backend
+            const response = await fetch(`${API_BASE_URL}/ask-question/`, {
+                method: 'POST',
+                body: formData
+            });
             
             // Remove typing indicator
             chatMessages.removeChild(typingIndicator);
             
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error getting answer');
+            }
+            
+            const data = await response.json();
+            
             // Add AI response
-            addMessage('ai', aiResponse);
+            addMessage('ai', data.answer);
             
         } catch (error) {
             // Remove typing indicator if it still exists
@@ -406,4 +393,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+    
+
 });
